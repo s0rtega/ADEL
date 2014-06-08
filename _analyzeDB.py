@@ -614,7 +614,12 @@ def analyze_twitter(backup_dir, os_version, xml_dir, twitter_dbname_list, config
                     except:           
                         _adel_log.log("analyzeDBs:    ----> can't get required status data from " + twitter_db_name.split("/")[-1] + " ! DB structure changed?", 1)
                         continue
-                    _xmlParser.twitter_to_xml(xml_dir, users_list, messages_list) 
+                    try:
+                        _xmlParser.twitter_to_xml(xml_dir, users_list, messages_list) 
+                    except Exception,e:
+                        print str(e)
+                        _adel_log.log("analyzeDBs:    ----> can't parse twitter information", 1)
+                        continue
             else:
                     _adel_log.log("analyzeDBs:   ----> database file " + twitter_db_name.split("/")[-1] + " missing !!", 1)
 

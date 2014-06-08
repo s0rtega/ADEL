@@ -32,13 +32,13 @@ def crack(backup_dir):
         f = open(backup_dir + "/databases/gesture.key", "rb")
         for line in f:
             lookup_hash = hexlify(line).decode()
-            _adel_log.log("Screenlock:    ----> Screenlock Hash: \033[0;32m" + lookup_hash + "\033[m", 0)
+            _adel_log.log("Screenlock:    ----> Screenlock Hash: \033[0;32m" + lookup_hash + "\033[m\n", 0)
             conn = sqlite3.connect(SQLITE_DB)
             cur = conn.cursor()
             cur.execute("SELECT pattern FROM RainbowTable WHERE hash = ?", (lookup_hash,))
             result = cur.fetchone()
             if result:
                 gesture = result[0]
-                _adel_log.log("Screenlock:    ----> Screenlock Gesture: \033[0;32m" + gesture + "\033[m", 0)
+                _adel_log.log("Screenlock:    ----> Screenlock Gesture: \033[0;32m" + gesture + "\033[m\n", 0)
     except:
-        _adel_log.log("Screenlock:    ----> Can't find gesture in RainbowTable !!!", 2)
+        _adel_log.log("Screenlock:    ----> Can't find gesture in RainbowTable !!!\n", 2)

@@ -18,6 +18,7 @@
 
 import struct
 import time
+import os
 
 import _adel_log
 import _sqliteParser
@@ -143,7 +144,7 @@ def get_location_information_wifi(backup_dir, outputFile):
 
 
 def createMap(backup_dir, cellPositionList, wifiPositionList, picturePositionList, twitterPositionList, gMapsPositionList, browserPositionList):
-    backup_dir = backup_dir.split("/")[0]
+    backup_dir = os.path.split(backup_dir)[0]
     mapFile = open(backup_dir + "/map.html", "a+")
     mapFile.write('''<!DOCTYPE html>
                     <html>
@@ -235,4 +236,4 @@ def createMap(backup_dir, cellPositionList, wifiPositionList, picturePositionLis
                     </body>
                     </html>''')
     mapFile.close()
-    _adel_log.log("LocationInfo:  ----> Location map \033[0;32m" + backup_dir + "/map.html\033[m created", 0)
+    _adel_log.log("LocationInfo:  ----> Location map \033[0;32m" + backup_dir + "/map.html\033[m created\n", 0)

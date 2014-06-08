@@ -28,12 +28,13 @@ class PhoneConfig(object):
         self.device = device
         self.os_version = os_version
         self.model = subprocess.Popen(['adb', 'shell', 'getprop', 'ro.product.model'], stdout=subprocess.PIPE).communicate(0)[0].rstrip("\r\n ")
+        
         if self.model == "":
             self.model = "local"
-
         try:
             self.xml_doc = minidom.parse(xml_file)
-        except:
+        except Exception,e:
+            print e
             print "Could not parse xml config file."
             sys.exit(1)
 
@@ -53,11 +54,11 @@ class PhoneConfig(object):
             
         # Otherwise take the first match or die
         for phone in phones:
-            if (phone.getAttribute("device") == self.device):
-                self.phone = phone
-                _adel_log.log("PhoneConfig:   ----> The ADEL configuration for this phone \"" + self.device + " " + phone.getAttribute("model") + " Android " + phone.getAttribute("os_version") +  "\" is different from the real phone \"" + self.device + " " + self.model + " Android " + self.os_version +  "\"! Please check output carefully!", 2)
-                return
-
+            #if (phone.getAttribute("device") == self.device):
+            self.phone = phone
+            _adel_log.log("PhoneConfig:   ----> The ADEL configuration for this phone \"" + self.device + " " + phone.getAttribute("model") + " Android " + phone.getAttribute("os_version") +  "\" is different from the real phone \"" + self.device + " " + self.model + " Android " + self.os_version +  "\"! Please check output carefully!", 2)
+            return
+ 
         _adel_log.log("PhoneConfig:   ----> No suitable config found for " + str(self.device), 2)
         sys.exit(1)
 

@@ -74,15 +74,15 @@ TIME = str(datetime.datetime.today()).split(' ')[1].split('.')[0].split(':')
 # Dumps sqlite databases from a connected android phone
 def dumpDBs(file_dir, os_version, device_name):
     # Backup the SQLite files
-    _adel_log.log("dumpDBs:       ----> dumping all SQLite databases....", 0)
+    _adel_log.log("dumpDBs:       ----> dumping all SQLite databases....\n", 0)
     _dumpFiles.get_SQLite_files(file_dir, os_version, device_name)
-    _adel_log.log("dumpDBs:       ----> all SQLite databases dumped", 0)
+    _adel_log.log("dumpDBs:       ----> all SQLite databases dumped\n", 0)
     _adel_log.log("", 3)
 
 
 # analyzes the dumped databases
 def analyzeDBs(file_dir, os_version, xml_dir, device_name, os_version2):
-    config = PhoneConfig("xml/phone_configs.xml", device_name, os_version2) #TODO os_version2?
+    config = PhoneConfig(os.path.dirname(__file__) + "/xml/phone_configs.xml", device_name, os_version2) #TODO os_version2?
     # Call the analysis module
     _adel_log.log("analyzeDBs:    ----> starting to parse and analyze the databases....", 0)
     _analyzeDB.phone_info(file_dir, os_version, xml_dir, device_name, config)
@@ -106,12 +106,14 @@ def get_location_information(backup_dir, device_name):
         backup_dir = backup_dir + "/databases"
     else:
         picture_position_list = ""
+        
     twitter_position_list = _locationInformation.get_location_information_twitter(backup_dir, output_file)
     gmaps_position_list = _locationInformation.get_location_information_gmaps(backup_dir, output_file)
     cell_position_list = _locationInformation.get_location_information_cell(backup_dir, output_file)
     wifi_position_list = _locationInformation.get_location_information_wifi(backup_dir, output_file)
     browser_position_list = _locationInformation.get_location_information_browser(backup_dir, output_file)
     _locationInformation.createMap(backup_dir, cell_position_list, wifi_position_list, picture_position_list, twitter_position_list, gmaps_position_list, browser_position_list)
+    
     output_file.close()
 
 
@@ -121,24 +123,22 @@ def run(argv):
     usage = "\033[0;32m adel.py <device/backup_folder> <loglevel>\033[m The loglevel is an optional value."
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-l', '--loglevel', default=4, const='4', nargs='?', help='The loglevel is an optional value between 0 (no logging) and 4 (full debug logging).')
-    parser.add_argument('-d', '--device', default=False, nargs='?', help='Use the device name of the smartphone to load the correct config.')
+    parser.add_argument('-d', '--device', default="default", nargs='?', help='Use the device name of the smartphone to load the correct config.')
     parser.add_argument('-db', '--database', default=False, nargs='?', help='Absolute path for already dumped databases')
     options = parser.parse_args(argv[1:])
     print sys.argv
     print options.device
-    if not options.device:
-        print "Illegal number of arguments"
-        print usage
-        sys.exit(1)
-    else:
-        mode = options.device
+
     if (int(options.loglevel) >= 0) and (int(options.loglevel) <= 4):
             _adel_log.LOG_LEVEL_GLOBAL = int(options.loglevel)
     else:
         _adel_log.LOG_LEVEL_GLOBAL = 4
 
     # Programm header
-    os.system("clear")
+    if os.name == "nt":          
+        os.system("cls")      # Works in w2k
+    else:
+         os.system("clear")   # Works in cygwin's Bash 
     
     print """\033[0;32m
               _____  ________  ___________.____
@@ -155,11 +155,19 @@ def run(argv):
     if not options.database:
 
         # Opening the connection to the smartphone or emulator
-        print "ADEL MAIN:     ----> Trying to connect to smartphone or emulator...."
+        print "ADEL MAIN:     ----> Trying to connect to smartphone or emulator....\n"
 
         # Check if there is a smartphone or emulator connected
-        if len(subprocess.Popen(['adb', 'devices'], stdout=subprocess.PIPE).communicate(0)[0].split()) > 4:
-
+        status  = subprocess.Popen(['adb', 'devices'], stdout=subprocess.PIPE).communicate(0)[0]
+        if "offline" in status:
+            print "\033[0;31mADEL MAIN:     ----> ERROR! No Android smartphone connected !!\033[m"
+            print "ADEL MAIN:     ----> stopping script...."
+            subprocess.Popen(['adb', 'kill-server'], stdout=subprocess.PIPE).communicate(0)[0]
+            print "\n"
+            print "\033[0;32m         (c) m.spreitzenbarth & s.schmitt 2012\033[m"
+            print "\n\n"
+            sys.exit(3) # indicates that no smartphone or emulator was connected to the PC
+        else:
             # Create backup directory
             try:
                 device_name = subprocess.Popen(['adb', 'devices'], stdout=subprocess.PIPE).communicate(0)[0].split()[4]
@@ -170,7 +178,7 @@ def run(argv):
 
             # Starting the deamon with root privileges
             subprocess.Popen(['adb', 'root'], stdout=subprocess.PIPE).communicate(0)[0]
-            backup_dir = DATE + "__" + TIME[0] + "-" + TIME[1] + "-" + TIME[2] + "__" + device_name
+            backup_dir = os.path.dirname(__file__) + "/" + DATE + "__" + TIME[0] + "-" + TIME[1] + "-" + TIME[2] + "__" + device_name
             os.mkdir(backup_dir)
 
             # Create log file and log directory if LOGLEVEL is > 0
@@ -205,7 +213,7 @@ def run(argv):
             os.mkdir(xml_dir)
 
             # Copy the xml stylesheet to the evidence directory
-            shutil.copy("xml/report.xsl", xml_dir + "/report.xsl")
+            shutil.copy(os.path.dirname(__file__)+"/xml/report.xsl", xml_dir + "/report.xsl")
             file_dir = backup_dir + "/databases"
             os.mkdir(file_dir)
             dumpDBs(file_dir, os_version, device_name)
@@ -223,14 +231,6 @@ def run(argv):
             # Close log file if any was created (log level must be > 0)
             if _adel_log.LOG_LEVEL_GLOBAL > 0:
                 _adel_log.FILE_HANDLE.close()
-        else:
-            print "\033[0;31mADEL MAIN:     ----> ERROR! No Android smartphone connected !!\033[m"
-            print "ADEL MAIN:     ----> stopping script...."
-            subprocess.Popen(['adb', 'kill-server'], stdout=subprocess.PIPE).communicate(0)[0]
-            print "\n"
-            print "\033[0;32m         (c) m.spreitzenbarth & s.schmitt 2012\033[m"
-            print "\n\n"
-            sys.exit(3) # indicates that no smartphone or emulator was connected to the PC
     else:
         # Define global variables
         backup_dir = options.database
