@@ -436,83 +436,125 @@ def phone_info(backup_dir, os_version, xml_dir, handheld_id, config):
     #                                                           definition of Tuples                                                                     #
     ######################################################################################################################################################
     # SMARTPHONE INFORMATION
-    ## Database Name
-    db_file_info_1 = backup_dir + "/" +  config.file_info1_db_name
-    ACCOUNTS_TABLE_NUMBER = config.file_info1_table_num
-    ######################################################################################################################################################
-    ## Table Design
-    #### [['row_id', 'INTEGER'], ['account_name', 'TEXT'], ['account_type', 'TEXT']]
-    ## Tuple Definition -> the integers in this tuple represent the corresponding columns of the database table of the above table design
-    ACCOUNTS_ENTRIES = config.account_entry_list
-    ######################################################################################################################################################
-    ## Database Name
-    db_file_info_2 = backup_dir + "/" + config.file_info2_db_name
-    ######################################################################################################################################################
-    ## Table Name
-    #### meta
-    ## corresponding table number in the database
-    META_TABLE_NUMBER = config.file_info2_table_num
-    ## Table Design
-    #### [['key', 'TEXT'], ['value', 'TEXT']]
-    ## Tuple Definition -> the integers in this tuple represent the corresponding columns of the database table of the above table design
-    META_ENTRY = config.meta_entry_list[0] # only one element 
-    ######################################################################################################################################################
-    ## Database Name
-    db_file_info_3 = backup_dir + "/" + config.file_info3_db_name
-    ######################################################################################################################################################
-    ## Table Name
-    #### secure
-    ## corresponding table number in the database
-    ID_TABLE_NUMBER = config.file_info3_table_num
-    ## Table Design
-    #### [['_id', 'INTEGER'],['name', 'TEXT'],['value', 'TEXT']]
-    ## Tuple Definition -> the integers in this tuple represent the corresponding columns of the database table of the above table design
-    ID_ENTRY = config.settings_entry_list[0]
-    ######################################################################################################################################################
+    db_file_info_1 = os.path.dirname(__file__) + backup_dir + "/" +  "accounts.db"
+    db_file_info_3 = os.path.dirname(__file__) + backup_dir + "/" +  "settings.db"
+   
+    try:
+        ######################################################################################################################################################
+        ## Database Name
+        ## accounts.db
+        con = sqlite3.connect(db_file_info_1)
+        cur = con.cursor()    
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = []
+        for row in cur:
+            tables.append(row[0])
+        ######################################################################################################################################################
+        ### Table Name
+        ##### accounts
+        ACCOUNTS_TABLE_NUMBER = tables.index("accounts")
+        ## Table Design
+        #### [['row_id', 'INTEGER'], ['account_name', 'TEXT'], ['account_type', 'TEXT']]
+        ## Tuple Definition -> the integers in this tuple represent the corresponding columns of the database table of the above table        
+        cur.execute("PRAGMA table_info(" + tables[ACCOUNTS_TABLE_NUMBER] + ")")
+        columns_accounts = []
+        for row in cur:
+            columns_accounts.append(row[1])           
+        ACCOUNTS_ENTRIES = [columns_accounts.index("name"),columns_accounts.index("type")]    
+        ######################################################################################################################################################
+        ### Table Name
+        ##### meta
+        META_TABLE_NUMBER = tables.index("meta")
+        ### corresponding table number in the database
+        ### Table Design
+        ##### [['key', 'TEXT'], ['value', 'TEXT']]
+        ### Tuple Definition -> the integers in this tuple represent the corresponding columns of the database table of the above table design
+        cur.execute("select * from " + tables[META_TABLE_NUMBER])
+        columns_meta = []
+        for row in cur:
+            columns_meta.append(row)
+        try:
+            META_ENTRY = columns_meta.index("imsi") # only one element 
+        except:
+            pass
+        con.close()     
+        ######################################################################################################################################################
+        ## Database Name
+        ## settings.db
+        con = sqlite3.connect(db_file_info_3)
+        cur = con.cursor()    
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = []
+        for row in cur:
+            tables.append(row[0])   
+        ######################################################################################################################################################
+        ## Table Name
+        #### secure
+        ## corresponding table number in the database
+        ID_TABLE_NUMBER = tables.index("secure")
+        ## Table Design
+        #### [['_id', 'INTEGER'],['name', 'TEXT'],['value', 'TEXT']]
+        ## Tuple Definition -> the integers in this tuple represent the corresponding columns of the database table of the above table design
+        cur.execute("select * from " + tables[ID_TABLE_NUMBER])
+        columns_secure = []
+        for row in cur:
+            columns_secure.append(row[1])
+        ID_ENTRY = columns_secure.index("android_id")
+        con.close()
+        ######################################################################################################################################################
+	  
+    except Exception,e:
+		print str(e)   
+
     if os.path.isfile(db_file_info_1):
-        if os.path.isfile(db_file_info_2):
+        if os.path.isfile(db_file_info_3):
             _adel_log.log("parseDBs:      ----> starting to parse \033[0;32msmartphone info\033[m", 0)
             try:
-                result_list_1 = _sqliteParser.parse_db(db_file_info_1)
-            except:
+                result_list_1 = _sqliteParser.parse_db(db_file_info_1)                
+            except: 
                 _adel_log.log("analyzeDBs:    ----> can't get required data from " + db_file_info_1.split("/")[2] + " ! Please check manually for account data.", 1)
             try:
-                result_list_2 = _sqliteParser.parse_db(db_file_info_2)
+                result_list_2 = _sqliteParser.parse_db(db_file_info_1)
             except:
-                _adel_log.log("analyzeDBs:    ----> can't get required data from " + db_file_info_2.split("/")[2] + " ! Please check manually for IMSI.", 1)
+                _adel_log.log("analyzeDBs:    ----> can't get required data from " + db_file_info_1.split("/")[2] + " ! Please check manually for IMSI.", 1)
             try:
                 result_list_3 = _sqliteParser.parse_db(db_file_info_3)
             except:
-                _adel_log.log("analyzeDBs:    ----> can't get required data from " + db_file_info_3.split("/")[2] + " ! Please check manually for android ID.", 1)
-            model = subprocess.Popen(['adb', 'shell', 'getprop', 'ro.product.model'], stdout=subprocess.PIPE).communicate(0)[0]#.split()[0] + " " + subprocess.Popen(['adb', 'shell', 'getprop', 'ro.product.model'], stdout=subprocess.PIPE).communicate(0)[0].split()[1]
+                _adel_log.log("analyzeDBs:    ----> can't get required data from " + db_file_info_3.split("/")[2] + " ! Please check manually for android ID.", 1)                
+       
+            model = subprocess.Popen(['adb', 'shell', 'getprop', 'ro.product.brand'], stdout=subprocess.PIPE).communicate()[0].split()[0] + " " + subprocess.Popen(['adb', 'shell', 'getprop', 'ro.product.model'], stdout=subprocess.PIPE).communicate(0)[0].split()[0] + " " + subprocess.Popen(['adb', 'shell', 'getprop', 'ro.product.model'], stdout=subprocess.PIPE).communicate(0)[0].split()[1]
+            
             # phone_info_list = [account_name, account_type, imsi, android_id, handheld_id, android_version]
+            phone_info_list = [None] * 7                     
             try:
-                phone_info_list = [
-                    str(result_list_1[ACCOUNTS_TABLE_NUMBER][1][ACCOUNTS_ENTRIES[0]]),
-                    str(result_list_1[ACCOUNTS_TABLE_NUMBER][1][ACCOUNTS_ENTRIES[1]]),
-                    str(result_list_2[META_TABLE_NUMBER][1][META_ENTRY]),
-                    str(result_list_3[ID_TABLE_NUMBER][17][ID_ENTRY]),
-                    handheld_id,
-                    model,
-                    os_version
-                    ]
+                phone_info_list[0] = str(result_list_1[ACCOUNTS_TABLE_NUMBER][1][ACCOUNTS_ENTRIES[0]])
             except:
-                phone_info_list = [
-                    "not found",
-                    "not found",
-                    "not found",
-                    "not found",
-                    handheld_id,
-                    model,
-                    os_version
-                    ]
+                phone_info_list[0] = "not found"                
+            try:
+                phone_info_list[1] = str(result_list_1[ACCOUNTS_TABLE_NUMBER][1][ACCOUNTS_ENTRIES[1]])
+            except:
+                phone_info_list[1] = "not found"          
+            try:
+                phone_info_list[2] = str(result_list_2[META_TABLE_NUMBER][1][META_ENTRY])
+            except:
+                phone_info_list[2] = "not found"
+            try:
+                phone_info_list[3] = str(result_list_3[ID_TABLE_NUMBER][ID_ENTRY+1][2])
+            except:
+                phone_info_list[3] = "not found"                
+             
+            phone_info_list[4] = handheld_id
+            phone_info_list[5] = model
+            phone_info_list[6] = os_version
+                    
+            print (phone_info_list)
             _xmlParser.smartphone_info_to_xml(xml_dir, phone_info_list)
         else:
             _adel_log.log("analyzeDBs:    ----> database file " + db_file_info_2.split("/")[2] + " missing !!", 1)
     else:
         _adel_log.log("analyzeDBs:    ----> database file " + db_file_info_1.split("/")[2] + " missing !!", 1)
 
-
+        
 def analyze_twitter(backup_dir, os_version, xml_dir, twitter_dbname_list, config):
     twitter_dbname_list.sort
     ######################################################################################################################################################
